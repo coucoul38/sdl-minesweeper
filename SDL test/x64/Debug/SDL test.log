@@ -1,0 +1,3 @@
+﻿  Source.c
+C:\Users\ncoulon\Documents\GitHub\SDL test\SDL test\Source.c(9,12): warning C4026: fonction déclarée avec une liste de paramètres formels
+  SDL test.vcxproj -> C:\Users\ncoulon\Documents\GitHub\SDL test\x64\Debug\SDL test.exe
