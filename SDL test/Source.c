@@ -1,72 +1,80 @@
+
 #include <SDL.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-typedef int bool;
-#define true 1
-#define false 0
+int init(SDL_Window **window, SDL_Renderer **renderer, int w, int h) {
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        fprintf(stderr, "Erreur SDL_Init : %s", SDL_GetError());
+        return -1;
+    }
+    if (SDL_CreateWindowAndRenderer(w, h, NULL, window, renderer) != 0) {
+        fprintf(stderr, "Erreur CreateWindowAndRenderer : %s", SDL_GetError());
+        return -1;
+    }
+    return 0;
+}
 
-int main() {
-	SDL_Window *window = NULL;
-	SDL_Renderer* renderer = NULL;
-	SDL_Texture* texture = NULL;
-	SDL_Color orange = { 255, 127, 40,255 };
-	int status = EXIT_FAILURE;
-	SDL_Rect rect = { 100, 100, 100, 100 }, dst = { 0,0,0,0 };
-	SDL_Color rouge = { 255,0,0 ,255 }, bleu = {0,0,255,255 };
+SDL_Texture *loadImage(const char path[], SDL_Renderer* renderer) {
+    SDL_Surface* tmp = NULL;
+    SDL_Texture* texture = NULL;
+    //printf("Path: %s\n", path);
+    
+    tmp = SDL_LoadBMP(path);
+    if (tmp == NULL) {
+        //fprintf(stderr, "Erreur LoadBMP : %s", SDL_GetError());
+        fprintf(stderr, "Erreur LoadBMP : %s", SDL_GetError());
+        return NULL;
+    }
 
-	if (0 != SDL_Init(SDL_INIT_VIDEO)) {
-		//renvoyer l'erreur
-		fprintf(stderr, "Erreur SDL_Init : %s", SDL_GetError());
-		goto Quit;
-	}
-	//initialisation de la fenêtre
-	if (SDL_CreateWindowAndRenderer(640, 480, SDL_WINDOW_SHOWN, &window, &renderer) != 0) {
-		fprintf(stderr, "Erreur SDL_CreateWindowAndRenderer : %s", SDL_GetError());
-		goto Quit;
-	}
-	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 200, 200);
-	if (texture == NULL) {
-		fprintf(stderr, "Erreur CreateTexture : %s", SDL_GetError());
-		goto Quit;
-	}
+    texture = SDL_CreateTextureFromSurface(renderer, tmp);
+    SDL_FreeSurface(tmp);
+    if (texture == NULL) {
+        fprintf(stderr, "Erreur CreateTextureFromSurface : %s", SDL_GetError());
+        return NULL;
+    }
+    return texture;
+}
 
-	//si il n'y a eu aucun problème
-	SDL_RaiseWindow(window);
+int setWindowColor(SDL_Renderer* renderer, SDL_Color color) {
+    if (SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a) != 0) {
+        fprintf(stderr, "Erreur SetRenderDrawColor : %s", SDL_GetError());
+        return -1;
+    }
+    if (SDL_RenderClear(renderer) != 0) {
+        fprintf(stderr, "Erreur RenderClear : %s", SDL_GetError());
+        return -1;
+    }
+    return 0;
+}
 
-	SDL_SetRenderDrawColor(renderer, orange.r, orange.g, orange.b, orange.a);
-	SDL_RenderClear(renderer); // peint tout le render avec la couleur séléctionné
-	
-	SDL_SetRenderTarget(renderer, texture);
-	SDL_SetRenderDrawColor(renderer, rouge.r, rouge.g, rouge.b, rouge.a);
-	SDL_RenderClear(renderer);
-	SDL_SetRenderDrawColor(renderer, bleu.r, bleu.g, bleu.b, bleu.a);
-	SDL_RenderDrawRect(renderer, &rect);
+int main(int argc, char* argv)
+{
+    SDL_Window* window = NULL;
+    SDL_Renderer* renderer = NULL;
+    SDL_Texture* image = NULL;
+    int statut = EXIT_FAILURE;
+    SDL_Color blanc = { 255, 255, 255, 255 };
+    if (0 != init(&window, &renderer, 640, 480)) /* ecrire cette fonction */
+        goto Quit;
 
-	SDL_SetRenderTarget(renderer, NULL);
-	
-	SDL_RenderPresent(renderer);//mettre à jour l'écran
-	
-	//SDL_RenderCopy(renderer, texture, NULL, NULL); //copier la texture sur le render (remplir complétement)
+    image = loadImage("bmp.bmp", renderer); /* ecrire cette fonction*/
+    if (NULL == image)
+        goto Quit;
 
-	// copier la texture et l'afficher dans ses dimensions réelles
-	SDL_QueryTexture(texture, NULL, NULL, &dst.w, &dst.h); //insére la largeur et hauteur de la texture dans dst (la zone dans laquelle la texture sera affichée)
-	SDL_RenderCopy(renderer, texture, NULL, &dst);
-	SDL_Delay(500);
-
-	SDL_RenderPresent(renderer);//mettre à jour l'écran
-	SDL_Delay(500);
-
-
-	status = EXIT_SUCCESS;
+    statut = EXIT_SUCCESS;
+    setWindowColor(renderer, blanc); /* ecrire cette fonction */
+    SDL_RenderCopy(renderer, image, NULL, NULL); //copier l'image sur le render
+    SDL_RenderPresent(renderer);
+    SDL_Delay(3000);
 
 Quit:
-	if (texture != NULL)
-		SDL_DestroyTexture(texture);
-	if (renderer != NULL)
-		SDL_DestroyRenderer(renderer);
-	if (window != NULL)
-		SDL_DestroyWindow(window);
-	SDL_Quit();
-	return status;
+    if (NULL != image)
+        SDL_DestroyTexture(image);
+    if (NULL != renderer)
+        SDL_DestroyRenderer(renderer);
+    if (NULL != window)
+        SDL_DestroyWindow(window);
+    SDL_Quit();
+    return statut;
 }
