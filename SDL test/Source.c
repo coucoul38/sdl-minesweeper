@@ -50,6 +50,8 @@ int setWindowColor(SDL_Renderer* renderer, SDL_Color color) {
 
 int main(int argc, char* argv)
 {
+    SDL_Event event;
+    SDL_bool quit = SDL_FALSE;
     SDL_Window* window = NULL;
     SDL_Renderer* renderer = NULL;
     SDL_Texture* image = NULL;
@@ -66,8 +68,16 @@ int main(int argc, char* argv)
     setWindowColor(renderer, blanc); /* ecrire cette fonction */
     SDL_RenderCopy(renderer, image, NULL, NULL); //copier l'image sur le render
     SDL_RenderPresent(renderer);
-    SDL_Delay(3000);
 
+    while (!quit)
+    {
+        //SDL_WaitEvent(&event); //le programme est bloqué tant qu'il n'y a pas d'événement
+        while(SDL_PollEvent(&event)) //ne bloque pas le programme
+            if (event.type == SDL_QUIT) //si l'utilisateur essaie de quiter la fenêtre
+                //quit = SDL_TRUE; //quiter la fenêtre
+                goto Quit;
+        SDL_Delay(20); //attendre 20ms entre chaque vérification d'event, pour avoir de meilleures performances
+    }
 Quit:
     if (NULL != image)
         SDL_DestroyTexture(image);
