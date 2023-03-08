@@ -357,44 +357,69 @@ void showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
                 }
             }
             else {
+                SDL_Rect dst = {col*tailleCase,row*tailleCase,tailleCase,tailleCase};
+                SDL_Texture* image = NULL;
                 if (display[row][col] == 'F') {
-
+                    image = loadImage("sprites/mines/flag.bmp", renderer);
+                    SDL_RenderCopy(renderer, image, NULL, &dst);
                     printf(REDBG "F" RESET " ");
                 }
                 else if (display[row][col] == '?' /* || display[row][col] == '0'*/) {
+                    image = loadImage("sprites/mines/blank.bmp", renderer);
+                    SDL_RenderCopy(renderer, image, NULL, &dst);
                     printf("%c ", display[row][col]);
                 }
                 else {
                     switch (display[row][col])
                     {
                     case '0':
+                        image = loadImage("sprites/mines/0.bmp", renderer);
+                        SDL_RenderCopy(renderer, image, NULL, &dst);
                         printf(COLOR0 "0 " RESET);
                         break;
                     case '1':
+                        image = loadImage("sprites/mines/1.bmp", renderer);
+                        SDL_RenderCopy(renderer, image, NULL, &dst);
                         printf(BLUE "1 " RESET);
                         break;
                     case '2':
+                        image = loadImage("sprites/mines/2.bmp", renderer);
+                        SDL_RenderCopy(renderer, image, NULL, &dst);
                         printf(GREEN "2 " RESET);
                         break;
                     case '3':
+                        image = loadImage("sprites/mines/3.bmp", renderer);
+                        SDL_RenderCopy(renderer, image, NULL, &dst);
                         printf(RED "3 " RESET);
                         break;
                     case '4':
+                        image = loadImage("sprites/mines/4.bmp", renderer);
+                        SDL_RenderCopy(renderer, image, NULL, &dst);
                         printf(MAGENTA "4 " RESET);
                         break;
                     case '5':
+                        image = loadImage("sprites/mines/5.bmp", renderer);
+                        SDL_RenderCopy(renderer, image, NULL, &dst);
                         printf(YELLOW "5 " RESET);
                         break;
                     case '6':
+                        image = loadImage("sprites/mines/5.bmp", renderer);
+                        SDL_RenderCopy(renderer, image, NULL, &dst);
                         printf(CYAN "6 " RESET);
                         break;
                     case 'X':
+                        image = loadImage("sprites/mines/bigX.bmp", renderer);
+                        SDL_RenderCopy(renderer, image, NULL, &dst);
                         printf(RED "X " RESET);
                         break;
                     case 'x':
+                        image = loadImage("sprites/mines/x.bmp", renderer);
+                        SDL_RenderCopy(renderer, image, NULL, &dst);
                         printf(RED WHITEBG "X" RESET " ");
                         break;
                     default:
+                        image = loadImage("sprites/mines/blank.bmp", renderer);
+                        SDL_RenderCopy(renderer, image, NULL, &dst);
                         printf("%c ", display[row][col]);
                         break;
                     }
@@ -409,6 +434,7 @@ void showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
             }
         }
     }
+    SDL_RenderPresent(renderer);
 }
 
 void reveal(char** display, int** grid, int size) { //cherche un endroit avec 0 mines autour et le reveal (marche pas)
@@ -438,13 +464,14 @@ void reveal(char** display, int** grid, int size) { //cherche un endroit avec 0 
 }
 
 int main() {
+    SDL_bool QUIT = SDL_FALSE;
     bool lost = false;
     int size = 0;
     SDL_Event event;
     SDL_Window* window = NULL;
     SDL_Renderer* renderer = NULL;
     int statut = EXIT_FAILURE;
-    if (0 != initSDL(&window, &renderer, 640, 480)) /* ecrire cette fonction */
+    if (0 != initSDL(&window, &renderer, 720, 720)) /* ecrire cette fonction */
         goto Quit;
     bool init = false;
     statut = EXIT_SUCCESS;
@@ -637,17 +664,29 @@ int main() {
         }
     }
 
-    system("cls"); //clear console
+    //system("cls"); //clear console
     currentTime = time(NULL);
     timer = difftime(currentTime, startTime);
-    showdisplay(display, size, timer, renderer,window);
+    while (!QUIT) {
+        SDL_WaitEvent(&event);
+        if (event.type == SDL_QUIT) {
+            QUIT = SDL_TRUE;
+        }
+        else if (event.type == SDL_WINDOWEVENT) {
+            if (event.window.event != SDL_WINDOWEVENT_ENTER && event.window.event != SDL_WINDOWEVENT_LEAVE)
+                showdisplay(display, size, timer, renderer, window);
+        }
+        
+    }
     free(display);
     free(grid);
 Quit:
     if (NULL != renderer)
-        SDL_DestroyRenderer(renderer);
+        printf("Destroying renderer QUIT");
+    //SDL_DestroyRenderer(renderer);
     if (NULL != window)
-        SDL_DestroyWindow(window);
-    SDL_Quit();
+        printf("Destroying window QUIT");
+    //SDL_DestroyWindow(window);
+    //SDL_Quit();
     return statut;
 }
