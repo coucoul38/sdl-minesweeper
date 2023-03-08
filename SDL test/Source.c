@@ -28,7 +28,7 @@ SDL_Color blanc = { 255, 255, 255, 255 };
 SDL_Color gris = { 133,133,133,255 };
 int location = 0;
 
-int init(SDL_Window **window, SDL_Renderer **renderer, int w, int h) {
+int initSDL(SDL_Window **window, SDL_Renderer **renderer, int w, int h) {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "Erreur SDL_Init : %s", SDL_GetError());
         return -1;
@@ -84,9 +84,9 @@ int askDifficulty(SDL_Renderer* renderer, SDL_Window*window) {
 
     int w = NULL, h = NULL;
     SDL_GetWindowSize(window, &w, &h);
-    SDL_Rect recteasy = { w/2-72, 0, 144, 48 };
-    SDL_Rect rectmed = { w / 2 - 72, 48, 144, 48 };
-    SDL_Rect recthard = { w / 2 - 72, 96, 144, 48 };
+    SDL_Rect rectEasy = { w / 2 - 72, 0, 144, 48 };
+    SDL_Rect rectMed = { w / 2 - 72, 48, 144, 48 };
+    SDL_Rect rectHard = { w / 2 - 72, 96, 144, 48 };
 
     SDL_Texture* easy = NULL;
     easy = loadImage("sprites/ui/easy.bmp", renderer); /* ecrire cette fonction*/
@@ -100,13 +100,46 @@ int askDifficulty(SDL_Renderer* renderer, SDL_Window*window) {
     hard = loadImage("sprites/ui/hard.bmp", renderer); /* ecrire cette fonction*/
     if (NULL == hard)
         return -1;
-    SDL_RenderCopy(renderer, easy, NULL, &recteasy); //copier l'image sur le render
-    SDL_RenderCopy(renderer, medium, NULL, &rectmed); //copier l'image sur le render
-    SDL_RenderCopy(renderer, hard, NULL, &recthard); //copier l'image sur le render 
+    SDL_RenderCopy(renderer, easy, NULL, &rectEasy); //copier l'image sur le render
+    SDL_RenderCopy(renderer, medium, NULL, &rectMed); //copier l'image sur le render
+    SDL_RenderCopy(renderer, hard, NULL, &rectHard); //copier l'image sur le render
     SDL_RenderPresent(renderer);
+
+    SDL_Event event;
+
+    while (difficulty == 0) {
+        SDL_WaitEvent(&event);
+        if (event.type == SDL_QUIT) {
+            if (NULL != renderer)
+                SDL_DestroyRenderer(renderer);
+            if (NULL != window)
+                SDL_DestroyWindow(window);
+            SDL_Quit();
+        }
+        else if (event.type == SDL_MOUSEBUTTONUP)
+        {
+            if (event.button.button == SDL_BUTTON_LEFT) {
+                SDL_Point cursor = { event.button.x, event.button.y };
+                if (SDL_PointInRect(&cursor, &rectEasy) == SDL_TRUE) {
+                    printf("Easy");
+                    difficulty = 1;
+                }
+                else if (SDL_PointInRect(&cursor, &rectMed) == SDL_TRUE) {
+                    printf("Medium");
+                    difficulty = 2;
+                }
+                else if (SDL_PointInRect(&cursor, &rectHard) == SDL_TRUE) {
+                    printf("Hard");
+                    difficulty = 3;
+                }
+            }
+        }
+    }
+    return 0;
 }
 
 int askSize(SDL_Renderer* renderer, SDL_Window* window) {
+    int size = 0;
     setWindowColor(renderer, gris);
 
     int w = NULL, h = NULL;
@@ -143,108 +176,48 @@ int askSize(SDL_Renderer* renderer, SDL_Window* window) {
     SDL_RenderCopy(renderer, size20, NULL, &rect20); //copier l'image sur le render 
     SDL_RenderCopy(renderer, sizeCustom, NULL, &rectCustom); //copier l'image sur le render 
     SDL_RenderPresent(renderer);
-}
 
-int main(int argc, char* argv)
-{
     SDL_Event event;
-    SDL_bool quit = SDL_FALSE;
-    SDL_Window* window = NULL;
-    SDL_Renderer* renderer = NULL;
-    int statut = EXIT_FAILURE;
-    if (0 != init(&window, &renderer, 640, 480)) /* ecrire cette fonction */
-        goto Quit;
 
-    statut = EXIT_SUCCESS;
-
-    while (!quit)
-    {
-        switch (location)
-        {
-        case 0:
-            askSize(renderer, window);
-            break;
-        case 1:
-            askDifficulty(renderer, window);
-            break;
-        default:
-            break;
+    while (size == 0) {
+        SDL_WaitEvent(&event);
+        if (event.type == SDL_QUIT) {
+            if (NULL != renderer)
+                SDL_DestroyRenderer(renderer);
+            if (NULL != window)
+                SDL_DestroyWindow(window);
+            SDL_Quit();
         }
-        //SDL_RaiseWindow(window);
-        //SDL_WaitEvent(&event); //le programme est bloqué tant qu'il n'y a pas d'événement
-        while(SDL_PollEvent(&event)) //ne bloque pas le programme
-            if (event.type == SDL_QUIT) //si l'utilisateur essaie de quiter la fenêtre
-                //quit = SDL_TRUE; //quiter la fenêtre
-                goto Quit;
-            else if (event.type == SDL_KEYDOWN)
-            {
-                if (event.key.keysym.scancode == SDL_SCANCODE_A)
-                    printf("scancode A\n");
-                if (event.key.keysym.sym == SDLK_a)
-                    printf("keysym A\n");
-            }
-            else if (event.type == SDL_MOUSEBUTTONUP)
-            {
-                if (event.button.button == SDL_BUTTON_LEFT)
-                    if (location == 1) {
-                        int w = NULL, h = NULL;
-                        SDL_GetWindowSize(window, &w, &h);
-                        SDL_Rect recteasy = { w / 2 - 72, 0, 144, 48 };
-                        SDL_Rect rectmed = { w / 2 - 72, 48, 144, 48 };
-                        SDL_Rect recthard = { w / 2 - 72, 96, 144, 48 };
-                        SDL_Point cursor = { event.button.x, event.button.y };
-                        if (SDL_PointInRect(&cursor, &recteasy) == SDL_TRUE) {
-                            printf("Easy");
-                            
-                        }
-                        else if (SDL_PointInRect(&cursor, &rectmed) == SDL_TRUE) {
-                            printf("Med");
-                        }
-                        else if (SDL_PointInRect(&cursor, &recthard) == SDL_TRUE) {
-                            printf("Hard");
-                        }
-                    } else if (location == 0) {
-                        int w = NULL, h = NULL;
-                        SDL_GetWindowSize(window, &w, &h);
-                        SDL_Rect rect5 = { w / 2 - 72, 0, 144, 48 };
-                        SDL_Rect rect10 = { w / 2 - 72, 48, 144, 48 };
-                        SDL_Rect rect15 = { w / 2 - 72, 96, 144, 48 };
-                        SDL_Rect rect20 = { w / 2 - 72, 144, 144, 48 };
-                        SDL_Rect rectCustom = { w / 2 - 72, 194, 144, 48 };
-                        SDL_Point cursor = { event.button.x, event.button.y };
-                        if (SDL_PointInRect(&cursor, &rect5) == SDL_TRUE) {
-                            printf("5");
-                            location++;
-                        }
-                        else if (SDL_PointInRect(&cursor, &rect10) == SDL_TRUE) {
-                            printf("10");
-                            location++;
-                        }
-                        else if (SDL_PointInRect(&cursor, &rect15) == SDL_TRUE) {
-                            printf("15");
-                            location++;
-                        }
-                        else if (SDL_PointInRect(&cursor, &rect20) == SDL_TRUE) {
-                            printf("20");
-                            location++;
-                        }
-                        else if (SDL_PointInRect(&cursor, &rectCustom) == SDL_TRUE) {
-                            printf("Choose your size");
-                        }
+        else if (event.type == SDL_MOUSEBUTTONUP)
+        {
+            if (event.button.button == SDL_BUTTON_LEFT) {
+                SDL_Point cursor = { event.button.x, event.button.y };
+                if (SDL_PointInRect(&cursor, &rect5) == SDL_TRUE) {
+                    printf("5");
+                    size = 5;
+                }
+                else if (SDL_PointInRect(&cursor, &rect10) == SDL_TRUE) {
+                    printf("10");
+                    size = 10;
+                }
+                else if (SDL_PointInRect(&cursor, &rect15) == SDL_TRUE) {
+                    printf("15");
+                    size = 15;
+                }
+                else if (SDL_PointInRect(&cursor, &rect20) == SDL_TRUE) {
+                    printf("20");
+                    size = 20;
+                }
+                else if (SDL_PointInRect(&cursor, &rectCustom) == SDL_TRUE) {
+                    while (!(size >= 3 && size <= 78)) {
+                        printf("Choisir une taille pour la grille de jeu (entre 3 et 78): ");
+                        scanf_s("%d", &size);
                     }
-                else if (event.button.button == SDL_BUTTON_RIGHT)
-                    printf("Au moins un clic droit\n");
+                }
             }
-
-        SDL_Delay(20); //attendre 20ms entre chaque vérification d'event, pour avoir de meilleures performances
+        }
     }
-Quit:
-    if (NULL != renderer)
-        SDL_DestroyRenderer(renderer);
-    if (NULL != window)
-        SDL_DestroyWindow(window);
-    SDL_Quit();
-    return statut;
+    return size;
 }
 
 //-----------------------------------------------
@@ -286,7 +259,6 @@ int countNearby(int row, int col, int size, int** grid, char** display) {
     }
     return(count);
 }
-
 
 bool checkWin(int size, char** display) {
     int count, row, col;
@@ -336,8 +308,21 @@ void showgrid(int** adress, int size)
     }
 }
 
-void showdisplay(char** display, int size, int timer) {
+void showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SDL_Window* window) {
     // display
+    SDL_Event event;
+    int w = NULL, h = NULL;
+    SDL_GetWindowSize(window, &w, &h);
+    int tailleCase = min(w, h)/size;
+
+    setWindowColor(renderer, gris);
+    SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
+
+    while (SDL_PollEvent(&event))
+        if (event.type == SDL_QUIT)
+            SDL_Quit();
+
     printf(GRAYBG "Mines: " RED "%d" RESET, toPlace);
     printf(GRAYBG " -- Difficulte: " RED "%i" RESET, difficulty);
     printf(GRAYBG " -- Time: " RED "%d\n" RESET, timer);
@@ -373,6 +358,7 @@ void showdisplay(char** display, int size, int timer) {
             }
             else {
                 if (display[row][col] == 'F') {
+
                     printf(REDBG "F" RESET " ");
                 }
                 else if (display[row][col] == '?' /* || display[row][col] == '0'*/) {
@@ -451,17 +437,27 @@ void reveal(char** display, int** grid, int size) { //cherche un endroit avec 0 
     countNearby(minRow, minCol, size, grid, display);
 }
 
-
-int oldmain() {
+int main() {
     bool lost = false;
     int size = 0;
+    SDL_Event event;
+    SDL_Window* window = NULL;
+    SDL_Renderer* renderer = NULL;
+    int statut = EXIT_FAILURE;
+    if (0 != initSDL(&window, &renderer, 640, 480)) /* ecrire cette fonction */
+        goto Quit;
+    bool init = false;
+    statut = EXIT_SUCCESS;
 
     while (!(size >= 3 && size <= 78)) {
-        printf("Choisir une taille pour la grille de jeu (entre 3 et 78): ");
-        scanf_s("%d", &size);
+        size = askSize(renderer, window);
     }
 
+    while (difficulty == 0) {
+        askDifficulty(renderer, window);
+    }
 
+    /*------------------INIT-----------------------*/
     /* initialisation de la grid */
     int** grid = (int**)malloc(size * sizeof(int*)); // initialise les rows qui vont contennir les colonnes
 
@@ -475,7 +471,6 @@ int oldmain() {
             grid[row][col] = 0;
         }
     }
-
     // initialisation de la grille display
     char** display = (char**)malloc(size * sizeof(char*)); // initialise les rows qui vont contennir les colonnes
 
@@ -491,10 +486,7 @@ int oldmain() {
             }
         }
     }
-
     printf("Size: %dx%d", size, size);
-
-
     int row, col;
     for (row = 0; row < size; row++) {
         for (col = 0; col < size; col++) {
@@ -509,19 +501,6 @@ int oldmain() {
     }
 
     //populate with mines
-
-
-    //change number of mines depending on difficulty
-
-    //vérifier que la difficulté entrée est valide
-    bool valide = false;
-    while (!valide) {
-        printf("\nChoisir la difficulte (entre 1 et 3): ");
-        scanf_s("%d", &difficulty);
-        if (difficulty > 0 && difficulty < 4 || difficulty == 999) {
-            valide = true;
-        }
-    }
     // change le nombre de mines suivant la difficulté
     switch (difficulty)
     {
@@ -573,15 +552,21 @@ int oldmain() {
     time_t startTime, currentTime;
     startTime = time(NULL);
     int timer;
+    init = true;
+    location = 2;
 
     while (!lost)
     {
+        while (SDL_PollEvent(&event))
+            if (event.type == SDL_QUIT)
+                goto Quit;
+        
         currentTime = time(NULL);
         timer = difftime(currentTime, startTime);
         // display
         system("cls"); //clear console
         //showgrid(grid, size);
-        showdisplay(display, size, timer);
+        showdisplay(display, size, timer, renderer,window);
 
         int inputR, inputC;
         char c1, c2;
@@ -647,22 +632,22 @@ int oldmain() {
             printf("\nBravo, vous avez gagne! \n");
             currentTime = time(NULL);
             timer = difftime(currentTime, startTime);
-            showdisplay(display, size, timer);
+            showdisplay(display, size, timer, renderer,window);
             return(0);
         }
-
-
-        //CHECK FOR MINES
-        /*if (grid[inputR - 1][inputC - 1] == 1) {
-            lost = true;
-            printf("Perdu !");
-        }*/
     }
+
     system("cls"); //clear console
     currentTime = time(NULL);
     timer = difftime(currentTime, startTime);
-    showdisplay(display, size, timer);
+    showdisplay(display, size, timer, renderer,window);
     free(display);
     free(grid);
-    return 0;
+Quit:
+    if (NULL != renderer)
+        SDL_DestroyRenderer(renderer);
+    if (NULL != window)
+        SDL_DestroyWindow(window);
+    SDL_Quit();
+    return statut;
 }
