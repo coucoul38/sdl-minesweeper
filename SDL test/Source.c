@@ -21,12 +21,12 @@ typedef int bool;
 #define true 1
 #define false 0
 
-int* pointeurSize = NULL;
+
 int toPlace;
 int difficulty = 0;
+bool lost = false;
 SDL_Color blanc = { 255, 255, 255, 255 };
 SDL_Color gris = { 133,133,133,255 };
-int location = 0;
 
 int initSDL(SDL_Window** window, SDL_Renderer** renderer, int w, int h) {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -308,7 +308,7 @@ void showgrid(int** adress, int size)
     }
 }
 
-void showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SDL_Window* window) {
+bool showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SDL_Window* window, int** grid) {
     // display
     SDL_Event event;
     int*** coordinates = NULL;
@@ -380,7 +380,7 @@ void showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
                         //printf(YELLOW "5 " RESET);
                         break;
                     case '6':
-                        image = loadImage("sprites/mines/5.bmp", renderer);
+                        image = loadImage("sprites/mines/6.bmp", renderer);
                         SDL_RenderCopy(renderer, image, NULL, &dst);
                         //printf(CYAN "6 " RESET);
                         break;
@@ -404,30 +404,39 @@ void showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
         }
     }
     while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_MOUSEBUTTONDOWN) {
+        if (event.type == SDL_MOUSEBUTTONDOWN && lost == false) {
+            int rowClick = event.button.y / tailleCase;
+            int colClick = event.button.x / tailleCase;
             SDL_Point cursor = { event.button.x, event.button.y };
             if (event.button.button == SDL_BUTTON_LEFT) {
-                printf("Dig %d %d\n", event.button.x, event.button.y);
-                for (int row = 0; row < size; row++) {
-                    for (int col = 0; col < size; col++) {
-                        //SDL_Rect current = { coordinates[row][col][0],coordinates[row][col][1],coordinates[row][col][2],coordinates[row][col][3] };
-                        SDL_Rect current = {0,0,0,0};
-                        if (SDL_PointInRect(&cursor, &current) == SDL_TRUE) {
-                            printf("[%d][%d]", row, col);
+                if (!(rowClick > size - 1 || colClick > size - 1)) {
+                    //inside the grid
+                    if (display[rowClick][colClick] != 'F') {
+                        countNearby(rowClick + 1, colClick + 1, size, grid, display);
+                        if (grid[rowClick][colClick] == 1) {
+                            for (int row = 0; row < size; row++) {
+                                for (int col = 0; col < size; col++) {
+                                    if (grid[row][col] == 1) {
+                                        display[row][col] = 'X';
+                                    }
+                                }
+                            }
+                            display[rowClick][colClick] = 'x';
+                            lost = true;
+                            return(false);
                         }
                     }
                 }
             }
             else {
                 //flag
-                printf("Flag %d %d\n", event.button.x, event.button.y);
-                for (int row = 0; row < size; row++) {
-                    for (int col = 0; col < size; col++) {
-                        //SDL_Rect current = { coordinates[row][col][0],coordinates[row][col][1],coordinates[row][col][2],coordinates[row][col][3] };
-                        SDL_Rect current = { 0,0,0,0 };
-                        if (SDL_PointInRect(&cursor, &current) == SDL_TRUE) {
-                            printf("[%d][%d]", row, col);
-                        }
+                if (!(rowClick > size - 1 || colClick > size - 1)) {
+                    if (display[rowClick][colClick] == 'F') {
+                        printf("F");
+                        display[rowClick][colClick] = '?';
+                    }
+                    else {
+                        display[rowClick][colClick] = 'F';
                     }
                 }
             }
@@ -436,7 +445,9 @@ void showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
             SDL_Quit();
         }
     }
+    if (checkWin(size, display) == true) {
 
+    }
     SDL_RenderPresent(renderer);
 }
 
@@ -466,13 +477,8 @@ void reveal(char** display, int** grid, int size) { //cherche un endroit avec 0 
     countNearby(minRow, minCol, size, grid, display);
 }
 
-int play(int row, int col, char** display, bool flag) {
-    
-}
-
 int main() {
     SDL_bool QUIT = SDL_FALSE;
-    bool lost = false;
     int size = 0;
     SDL_Event event;
     SDL_Window* window = NULL;
@@ -520,6 +526,7 @@ int main() {
             }
         }
     }
+
     printf("Size: %dx%d", size, size);
     int row, col;
     for (row = 0; row < size; row++) {
@@ -587,7 +594,6 @@ int main() {
     startTime = time(NULL);
     int timer;
     init = true;
-    location = 2;
 
     while (!lost)
     {
@@ -600,73 +606,14 @@ int main() {
         // display
         //system("cls"); //clear console
         //showgrid(grid, size);
-        showdisplay(display, size, timer, renderer, window);
+        showdisplay(display, size, timer, renderer, window, grid);
 
-        int inputR, inputC;
-        char c1, c2;
-        bool valide = false;
-        /*while (!valide) {
-            // r�cup�rer les coordonn�es
-            printf("\nEntrez les coordonees de la case ainsi: Ligne Colone (and flag)\nex: 1 3\n");
-            scanf_s("%d %d", &inputR, &inputC);
-
-            c1 = getchar(); //r�cup�re le 1er char du buffer (probablement un espace)
-
-            while (c1 != '\n' && c1 == ' ')
-            {
-                c1 = getchar(); //on parcours le buffer jusqu'� trouver un char ou arriver � la fin
-            }
-
-            c2 = c1;
-            while (c2 != '\n')
-            {
-                c2 = getchar(); //vider le buffer
-            }
-
-            // Check si la case est valide
-            if ((inputC <= size && inputC > 0) && (inputR <= size && inputR > 0)) {
-                valide = true;
-                if (c1 == 'f') {
-                    printf("test");
-                    if (display[inputR - 1][inputC - 1] == 'F') {
-                        printf("F");
-                        display[inputR - 1][inputC - 1] = '?';
-                    }
-                    else {
-                        display[inputR - 1][inputC - 1] = 'F';
-                    }
-                }
-            }
-            else { // redemander si elle ne l'est pas
-                printf("\nCoordonees invalides, reessayez\n");
-            }
-        }
-        // check si la case � �t� d�couverte
-        if (display[inputR - 1][inputC - 1] == '?') {
-            if (grid[inputR - 1][inputC - 1] == 1) {
-                if (c1 != 'f') {
-                    for (row = 0; row < size; row++) {
-                        for (col = 0; col < size; col++) {
-                            if (grid[row][col] == 1) {
-                                display[row][col] = 'X';
-                            }
-                        }
-                    }
-                    display[inputR - 1][inputC - 1] = 'x';
-                    lost = true;
-                    printf("\nPERDU!\n");
-                }
-            }
-            else if (c1 != 'f') {
-                countNearby(inputR, inputC, size, grid, display);
-            }
-        }*/
         if (checkWin(size, display)) {
             system("cls"); //clear console
             printf("\nBravo, vous avez gagne! \n");
             currentTime = time(NULL);
             timer = difftime(currentTime, startTime);
-            showdisplay(display, size, timer, renderer, window);
+            showdisplay(display, size, timer, renderer, window, grid);
             return(0);
         }
     }
@@ -675,13 +622,14 @@ int main() {
     currentTime = time(NULL);
     timer = difftime(currentTime, startTime);
     while (!QUIT) {
+        showdisplay(display, size, timer, renderer, window, grid);
         SDL_WaitEvent(&event);
         if (event.type == SDL_QUIT) {
             QUIT = SDL_TRUE;
         }
         else if (event.type == SDL_WINDOWEVENT) {
             if (event.window.event != SDL_WINDOWEVENT_ENTER && event.window.event != SDL_WINDOWEVENT_LEAVE)
-                showdisplay(display, size, timer, renderer, window);
+                showdisplay(display, size, timer, renderer, window, grid);
         }
 
     }
@@ -689,11 +637,9 @@ int main() {
     free(grid);
 Quit:
     if (NULL != renderer)
-        printf("Destroying renderer QUIT");
-    //SDL_DestroyRenderer(renderer);
+        SDL_DestroyRenderer(renderer);
     if (NULL != window)
-        printf("Destroying window QUIT");
-    //SDL_DestroyWindow(window);
-    //SDL_Quit();
+        SDL_DestroyWindow(window);
+    SDL_Quit();
     return statut;
 }
