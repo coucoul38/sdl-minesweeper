@@ -608,8 +608,8 @@ int main() {
             system("cls"); //clear console
             printf("\nBravo, vous avez gagne! \n");
             currentTime = time(NULL);
-            timer = difftime(currentTime, startTime);
-            showdisplay(display, size, timer, renderer, window, grid);
+            timer = difftime(currentTime, startTime); 
+
             stop = true;
         }
     }
