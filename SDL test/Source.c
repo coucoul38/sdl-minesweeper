@@ -242,7 +242,7 @@ int countNearby(int row, int col, int size, int** grid, char** display) {
     display[row - 1][col - 1] = nearby;
 
     //si il n'y a aucune mine autour, d�couvrir les cases adjacentes
-    if (count == 0 && grid[row-1][col-1]!=1) {
+    if (count == 0 && grid[row - 1][col - 1] != 1) {
         int rRelativeToInput, cRelativeToInput;
         for (rRelativeToInput = -2; rRelativeToInput < 1; rRelativeToInput++) {
             for (cRelativeToInput = -2; cRelativeToInput < 1; cRelativeToInput++) {
@@ -310,7 +310,6 @@ void showgrid(int** adress, int size)
 bool showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SDL_Window* window, int** grid) {
     // display
     SDL_Event event;
-    int*** coordinates = NULL;
     int w = NULL, h = NULL;
     SDL_GetWindowSize(window, &w, &h);
     int tailleCase = min(w, h) / size;
@@ -325,28 +324,24 @@ bool showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
     /*printf(GRAYBG "Mines: " RED "%d" RESET, toPlace);
     printf(GRAYBG " -- Difficulte: " RED "%i" RESET, difficulty);
     printf(GRAYBG " -- Time: " RED "%d\n" RESET, timer);*/
-    for (int row = 0; row < size; row++) {
-        for (int col = 0; col < size; col++) {
-            SDL_Rect dst = { col * tailleCase,row * tailleCase,tailleCase,tailleCase };
-            SDL_Texture* image = NULL;
+    if (stop == false) {
+        for (int row = 0; row < size; row++) {
+            for (int col = 0; col < size; col++) {
+                SDL_Rect dst = { col * tailleCase,row * tailleCase,tailleCase,tailleCase };
+                SDL_Texture* image = NULL;
 
-            /*coordinates[row][col][0] = dst.x;
-            coordinates[row][col][1] = dst.y;
-            coordinates[row][col][2] = dst.w;
-            coordinates[row][col][3] = dst.h;*/
-
-            if (display[row][col] == 'F') {
-                image = loadImage("sprites/mines/flag.bmp", renderer);
-                SDL_RenderCopy(renderer, image, NULL, &dst);
-                //printf(REDBG "F" RESET " ");
-            }
-            else if (display[row][col] == '?' /* || display[row][col] == '0'*/) {
-                image = loadImage("sprites/mines/blank.bmp", renderer);
-                SDL_RenderCopy(renderer, image, NULL, &dst);
-                //printf("%c ", display[row][col]);
-            }
-            else {
-                switch (display[row][col])
+                if (display[row][col] == 'F') {
+                    image = loadImage("sprites/mines/flag.bmp", renderer);
+                    SDL_RenderCopy(renderer, image, NULL, &dst);
+                    //printf(REDBG "F" RESET " ");
+                }
+                else if (display[row][col] == '?' /* || display[row][col] == '0'*/) {
+                    image = loadImage("sprites/mines/blank.bmp", renderer);
+                    SDL_RenderCopy(renderer, image, NULL, &dst);
+                    //printf("%c ", display[row][col]);
+                }
+                else {
+                    switch (display[row][col])
                     {
                     case '0':
                         image = loadImage("sprites/mines/0.bmp", renderer);
@@ -399,8 +394,13 @@ bool showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
                         //printf("%c ", display[row][col]);
                         break;
                     }
+                }
             }
         }
+    } else { //win screen
+        SDL_Texture* image = NULL;
+        image = loadImage("sprites/ui/victory.bmp", renderer);
+        SDL_RenderCopy(renderer, image, NULL, NULL);
     }
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_MOUSEBUTTONDOWN && stop == false) {
@@ -608,7 +608,7 @@ int main() {
             system("cls"); //clear console
             printf("\nBravo, vous avez gagne! \n");
             currentTime = time(NULL);
-            timer = difftime(currentTime, startTime); 
+            timer = difftime(currentTime, startTime);
 
             stop = true;
         }
