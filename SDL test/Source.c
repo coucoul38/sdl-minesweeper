@@ -1,4 +1,4 @@
-
+ï»¿
 #include <SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,7 +28,7 @@ SDL_Color blanc = { 255, 255, 255, 255 };
 SDL_Color gris = { 133,133,133,255 };
 int location = 0;
 
-int initSDL(SDL_Window **window, SDL_Renderer **renderer, int w, int h) {
+int initSDL(SDL_Window** window, SDL_Renderer** renderer, int w, int h) {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "Erreur SDL_Init : %s", SDL_GetError());
         return -1;
@@ -46,11 +46,11 @@ int initSDL(SDL_Window **window, SDL_Renderer **renderer, int w, int h) {
     return 0;
 }
 
-SDL_Texture *loadImage(const char path[], SDL_Renderer* renderer) {
+SDL_Texture* loadImage(const char path[], SDL_Renderer* renderer) {
     SDL_Surface* tmp = NULL;
     SDL_Texture* texture = NULL;
     //printf("Path: %s\n", path);
-    
+
     tmp = SDL_LoadBMP(path);
     if (tmp == NULL) {
         //fprintf(stderr, "Erreur LoadBMP : %s", SDL_GetError());
@@ -79,7 +79,7 @@ int setWindowColor(SDL_Renderer* renderer, SDL_Color color) {
     return 0;
 }
 
-int askDifficulty(SDL_Renderer* renderer, SDL_Window*window) {
+int askDifficulty(SDL_Renderer* renderer, SDL_Window* window) {
     setWindowColor(renderer, gris);
 
     int w = NULL, h = NULL;
@@ -221,7 +221,7 @@ int askSize(SDL_Renderer* renderer, SDL_Window* window) {
 }
 
 //-----------------------------------------------
-// compter le nombre de mines adjacentes à une case
+// compter le nombre de mines adjacentes ï¿½ une case
 int countNearby(int row, int col, int size, int** grid, char** display) {
     int R, C, count;
     count = 0;
@@ -242,7 +242,7 @@ int countNearby(int row, int col, int size, int** grid, char** display) {
     char nearby = count + '0';
     display[row - 1][col - 1] = nearby;
 
-    //si il n'y a aucune mine autour, découvrir les cases adjacentes
+    //si il n'y a aucune mine autour, dï¿½couvrir les cases adjacentes
     if (count == 0) {
         int rRelativeToInput, cRelativeToInput;
         for (rRelativeToInput = -2; rRelativeToInput < 1; rRelativeToInput++) {
@@ -311,129 +311,132 @@ void showgrid(int** adress, int size)
 void showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SDL_Window* window) {
     // display
     SDL_Event event;
+    int*** coordinates = NULL;
     int w = NULL, h = NULL;
     SDL_GetWindowSize(window, &w, &h);
-    int tailleCase = min(w, h)/size;
+    int tailleCase = min(w, h) / size;
 
     setWindowColor(renderer, gris);
     SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
 
     while (SDL_PollEvent(&event))
         if (event.type == SDL_QUIT)
             SDL_Quit();
 
-    printf(GRAYBG "Mines: " RED "%d" RESET, toPlace);
+    /*printf(GRAYBG "Mines: " RED "%d" RESET, toPlace);
     printf(GRAYBG " -- Difficulte: " RED "%i" RESET, difficulty);
-    printf(GRAYBG " -- Time: " RED "%d\n" RESET, timer);
-    for (int row = -1; row < size; row++) {
-        for (int col = -1; col < size; col++) {
-            if (row == -1) {
-                //ALIGNEMENT DES ROWS
-                if (size > 9) {
-                    if (col > 9) {
-                        printf(BMAGENTA "%d " RESET, col + 1);
-                    }
-                    else {
-                        printf(BMAGENTA "%d  " RESET, col + 1);
-                    }
-                }
-                else {
-                    printf(BMAGENTA "%d " RESET, col + 1);
-                }
+    printf(GRAYBG " -- Time: " RED "%d\n" RESET, timer);*/
+    for (int row = 0; row < size; row++) {
+        for (int col = 0; col < size; col++) {
+            SDL_Rect dst = { col * tailleCase,row * tailleCase,tailleCase,tailleCase };
+            SDL_Texture* image = NULL;
+
+            /*coordinates[row][col][0] = dst.x;
+            coordinates[row][col][1] = dst.y;
+            coordinates[row][col][2] = dst.w;
+            coordinates[row][col][3] = dst.h;*/
+
+            if (display[row][col] == 'F') {
+                image = loadImage("sprites/mines/flag.bmp", renderer);
+                SDL_RenderCopy(renderer, image, NULL, &dst);
+                //printf(REDBG "F" RESET " ");
             }
-            else if (col == -1) {
-                //ALIGNEMENT DES ROWS
-                if (size > 9) {
-                    if (row > 8) {
-                        printf(BMAGENTA "%d " RESET, row + 1);
-                    }
-                    else {
-                        printf(BMAGENTA "%d  " RESET, row + 1);
-                    }
-                }
-                else {
-                    printf(BMAGENTA "%d " RESET, row + 1);
-                }
+            else if (display[row][col] == '?' /* || display[row][col] == '0'*/) {
+                image = loadImage("sprites/mines/blank.bmp", renderer);
+                SDL_RenderCopy(renderer, image, NULL, &dst);
+                //printf("%c ", display[row][col]);
             }
             else {
-                SDL_Rect dst = {col*tailleCase,row*tailleCase,tailleCase,tailleCase};
-                SDL_Texture* image = NULL;
-                if (display[row][col] == 'F') {
-                    image = loadImage("sprites/mines/flag.bmp", renderer);
-                    SDL_RenderCopy(renderer, image, NULL, &dst);
-                    printf(REDBG "F" RESET " ");
-                }
-                else if (display[row][col] == '?' /* || display[row][col] == '0'*/) {
-                    image = loadImage("sprites/mines/blank.bmp", renderer);
-                    SDL_RenderCopy(renderer, image, NULL, &dst);
-                    printf("%c ", display[row][col]);
-                }
-                else {
-                    switch (display[row][col])
+                switch (display[row][col])
                     {
                     case '0':
                         image = loadImage("sprites/mines/0.bmp", renderer);
                         SDL_RenderCopy(renderer, image, NULL, &dst);
-                        printf(COLOR0 "0 " RESET);
+                        //printf(COLOR0 "0 " RESET);
                         break;
                     case '1':
                         image = loadImage("sprites/mines/1.bmp", renderer);
                         SDL_RenderCopy(renderer, image, NULL, &dst);
-                        printf(BLUE "1 " RESET);
+                        //printf(BLUE "1 " RESET);
                         break;
                     case '2':
                         image = loadImage("sprites/mines/2.bmp", renderer);
                         SDL_RenderCopy(renderer, image, NULL, &dst);
-                        printf(GREEN "2 " RESET);
+                        //printf(GREEN "2 " RESET);
                         break;
                     case '3':
                         image = loadImage("sprites/mines/3.bmp", renderer);
                         SDL_RenderCopy(renderer, image, NULL, &dst);
-                        printf(RED "3 " RESET);
+                        //printf(RED "3 " RESET);
                         break;
                     case '4':
                         image = loadImage("sprites/mines/4.bmp", renderer);
                         SDL_RenderCopy(renderer, image, NULL, &dst);
-                        printf(MAGENTA "4 " RESET);
+                        //printf(MAGENTA "4 " RESET);
                         break;
                     case '5':
                         image = loadImage("sprites/mines/5.bmp", renderer);
                         SDL_RenderCopy(renderer, image, NULL, &dst);
-                        printf(YELLOW "5 " RESET);
+                        //printf(YELLOW "5 " RESET);
                         break;
                     case '6':
                         image = loadImage("sprites/mines/5.bmp", renderer);
                         SDL_RenderCopy(renderer, image, NULL, &dst);
-                        printf(CYAN "6 " RESET);
+                        //printf(CYAN "6 " RESET);
                         break;
                     case 'X':
                         image = loadImage("sprites/mines/bigX.bmp", renderer);
                         SDL_RenderCopy(renderer, image, NULL, &dst);
-                        printf(RED "X " RESET);
+                        //printf(RED "X " RESET);
                         break;
                     case 'x':
                         image = loadImage("sprites/mines/x.bmp", renderer);
                         SDL_RenderCopy(renderer, image, NULL, &dst);
-                        printf(RED WHITEBG "X" RESET " ");
+                        //printf(RED WHITEBG "X" RESET " ");
                         break;
                     default:
                         image = loadImage("sprites/mines/blank.bmp", renderer);
                         SDL_RenderCopy(renderer, image, NULL, &dst);
-                        printf("%c ", display[row][col]);
+                        //printf("%c ", display[row][col]);
                         break;
                     }
-                }
-                //ALIGNEMENT DES ROWS
-                if (size > 9) {
-                    printf(" ");
-                }
-            }
-            if (col == size - 1) {
-                printf("\n");
             }
         }
     }
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_MOUSEBUTTONDOWN) {
+            SDL_Point cursor = { event.button.x, event.button.y };
+            if (event.button.button == SDL_BUTTON_LEFT) {
+                printf("Dig %d %d\n", event.button.x, event.button.y);
+                for (int row = 0; row < size; row++) {
+                    for (int col = 0; col < size; col++) {
+                        //SDL_Rect current = { coordinates[row][col][0],coordinates[row][col][1],coordinates[row][col][2],coordinates[row][col][3] };
+                        SDL_Rect current = {0,0,0,0};
+                        if (SDL_PointInRect(&cursor, &current) == SDL_TRUE) {
+                            printf("[%d][%d]", row, col);
+                        }
+                    }
+                }
+            }
+            else {
+                //flag
+                printf("Flag %d %d\n", event.button.x, event.button.y);
+                for (int row = 0; row < size; row++) {
+                    for (int col = 0; col < size; col++) {
+                        //SDL_Rect current = { coordinates[row][col][0],coordinates[row][col][1],coordinates[row][col][2],coordinates[row][col][3] };
+                        SDL_Rect current = { 0,0,0,0 };
+                        if (SDL_PointInRect(&cursor, &current) == SDL_TRUE) {
+                            printf("[%d][%d]", row, col);
+                        }
+                    }
+                }
+            }
+        }
+        else if (event.type == SDL_QUIT) {
+            SDL_Quit();
+        }
+    }
+
     SDL_RenderPresent(renderer);
 }
 
@@ -461,6 +464,10 @@ void reveal(char** display, int** grid, int size) { //cherche un endroit avec 0 
     }
     //printf("Revealing [%d][%d]\n", minRow, minCol);
     countNearby(minRow, minCol, size, grid, display);
+}
+
+int play(int row, int col, char** display, bool flag) {
+    
 }
 
 int main() {
@@ -520,7 +527,7 @@ int main() {
             grid[row][col] = 0;
         }
     }
-    // grid à afficher
+    // grid ï¿½ afficher
     for (row = 0; row < size; row++) {
         for (col = 0; col < size; col++) {
             display[row][col] = '?';
@@ -528,7 +535,7 @@ int main() {
     }
 
     //populate with mines
-    // change le nombre de mines suivant la difficulté
+    // change le nombre de mines suivant la difficultï¿½
     switch (difficulty)
     {
     case 1:
@@ -587,27 +594,27 @@ int main() {
         while (SDL_PollEvent(&event))
             if (event.type == SDL_QUIT)
                 goto Quit;
-        
+
         currentTime = time(NULL);
         timer = difftime(currentTime, startTime);
         // display
-        system("cls"); //clear console
+        //system("cls"); //clear console
         //showgrid(grid, size);
-        showdisplay(display, size, timer, renderer,window);
+        showdisplay(display, size, timer, renderer, window);
 
         int inputR, inputC;
         char c1, c2;
         bool valide = false;
-        while (!valide) {
-            // récupérer les coordonnées
+        /*while (!valide) {
+            // rï¿½cupï¿½rer les coordonnï¿½es
             printf("\nEntrez les coordonees de la case ainsi: Ligne Colone (and flag)\nex: 1 3\n");
             scanf_s("%d %d", &inputR, &inputC);
 
-            c1 = getchar(); //récupère le 1er char du buffer (probablement un espace)
+            c1 = getchar(); //rï¿½cupï¿½re le 1er char du buffer (probablement un espace)
 
             while (c1 != '\n' && c1 == ' ')
             {
-                c1 = getchar(); //on parcours le buffer jusqu'à trouver un char ou arriver à la fin
+                c1 = getchar(); //on parcours le buffer jusqu'ï¿½ trouver un char ou arriver ï¿½ la fin
             }
 
             c2 = c1;
@@ -634,7 +641,7 @@ int main() {
                 printf("\nCoordonees invalides, reessayez\n");
             }
         }
-        // check si la case à été découverte
+        // check si la case ï¿½ ï¿½tï¿½ dï¿½couverte
         if (display[inputR - 1][inputC - 1] == '?') {
             if (grid[inputR - 1][inputC - 1] == 1) {
                 if (c1 != 'f') {
@@ -653,13 +660,13 @@ int main() {
             else if (c1 != 'f') {
                 countNearby(inputR, inputC, size, grid, display);
             }
-        }
+        }*/
         if (checkWin(size, display)) {
             system("cls"); //clear console
             printf("\nBravo, vous avez gagne! \n");
             currentTime = time(NULL);
             timer = difftime(currentTime, startTime);
-            showdisplay(display, size, timer, renderer,window);
+            showdisplay(display, size, timer, renderer, window);
             return(0);
         }
     }
@@ -676,7 +683,7 @@ int main() {
             if (event.window.event != SDL_WINDOWEVENT_ENTER && event.window.event != SDL_WINDOWEVENT_LEAVE)
                 showdisplay(display, size, timer, renderer, window);
         }
-        
+
     }
     free(display);
     free(grid);
