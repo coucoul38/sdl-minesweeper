@@ -53,7 +53,6 @@ SDL_Texture* loadImage(const char path[], SDL_Renderer* renderer) {
 
     tmp = SDL_LoadBMP(path);
     if (tmp == NULL) {
-        //fprintf(stderr, "Erreur LoadBMP : %s", SDL_GetError());
         fprintf(stderr, "Erreur LoadBMP : %s", SDL_GetError());
         return NULL;
     }
@@ -442,10 +441,6 @@ bool showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
             }
         }
         else if (event.type == SDL_QUIT) {
-            if (NULL != renderer)
-                SDL_DestroyRenderer(renderer);
-            if (NULL != window)
-                SDL_DestroyWindow(window);
             SDL_Quit();
         }
     }
