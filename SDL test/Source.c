@@ -24,7 +24,7 @@ typedef int bool;
 
 int toPlace;
 int difficulty = 0;
-bool lost = false;
+bool stop = false;
 SDL_Color blanc = { 255, 255, 255, 255 };
 SDL_Color gris = { 133,133,133,255 };
 
@@ -243,7 +243,7 @@ int countNearby(int row, int col, int size, int** grid, char** display) {
     display[row - 1][col - 1] = nearby;
 
     //si il n'y a aucune mine autour, d�couvrir les cases adjacentes
-    if (count == 0) {
+    if (count == 0 && grid[row-1][col-1]!=1) {
         int rRelativeToInput, cRelativeToInput;
         for (rRelativeToInput = -2; rRelativeToInput < 1; rRelativeToInput++) {
             for (cRelativeToInput = -2; cRelativeToInput < 1; cRelativeToInput++) {
@@ -404,7 +404,7 @@ bool showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
         }
     }
     while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_MOUSEBUTTONDOWN && lost == false) {
+        if (event.type == SDL_MOUSEBUTTONDOWN && stop == false) {
             int rowClick = event.button.y / tailleCase;
             int colClick = event.button.x / tailleCase;
             SDL_Point cursor = { event.button.x, event.button.y };
@@ -422,7 +422,7 @@ bool showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
                                 }
                             }
                             display[rowClick][colClick] = 'x';
-                            lost = true;
+                            stop = true;
                             return(false);
                         }
                     }
@@ -442,11 +442,12 @@ bool showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
             }
         }
         else if (event.type == SDL_QUIT) {
+            if (NULL != renderer)
+                SDL_DestroyRenderer(renderer);
+            if (NULL != window)
+                SDL_DestroyWindow(window);
             SDL_Quit();
         }
-    }
-    if (checkWin(size, display) == true) {
-
     }
     SDL_RenderPresent(renderer);
 }
@@ -595,7 +596,7 @@ int main() {
     int timer;
     init = true;
 
-    while (!lost)
+    while (!stop)
     {
         while (SDL_PollEvent(&event))
             if (event.type == SDL_QUIT)
@@ -614,13 +615,14 @@ int main() {
             currentTime = time(NULL);
             timer = difftime(currentTime, startTime);
             showdisplay(display, size, timer, renderer, window, grid);
-            return(0);
+            stop = true;
         }
     }
 
     //system("cls"); //clear console
     currentTime = time(NULL);
     timer = difftime(currentTime, startTime);
+    printf("Time: %i", timer);
     while (!QUIT) {
         showdisplay(display, size, timer, renderer, window, grid);
         SDL_WaitEvent(&event);
