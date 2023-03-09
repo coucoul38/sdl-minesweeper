@@ -1,5 +1,6 @@
 ﻿
 #include <SDL.h>
+#include <SDL_mixer.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -27,9 +28,13 @@ int difficulty = 0;
 bool stop = false;
 SDL_Color blanc = { 255, 255, 255, 255 };
 SDL_Color gris = { 133,133,133,255 };
+Mix_Chunk* dig = NULL;
+Mix_Chunk* death = NULL;
+Mix_Chunk* plantFlag = NULL;
+Mix_Chunk* removeFlag = NULL;
 
 int initSDL(SDL_Window** window, SDL_Renderer** renderer, int w, int h) {
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
         fprintf(stderr, "Erreur SDL_Init : %s", SDL_GetError());
         return -1;
     }
@@ -37,10 +42,12 @@ int initSDL(SDL_Window** window, SDL_Renderer** renderer, int w, int h) {
         fprintf(stderr, "Erreur CreateWindowAndRenderer : %s", SDL_GetError());
         return -1;
     }
-    /*if (SDL_SetWindowFullscreen(*window, SDL_WINDOW_FULLSCREEN_DESKTOP) != 0) {
-        fprintf(stderr, "Erreur SetWindowFullscreen : %s", SDL_GetError());
+    //Initialize SDL_mixer
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+    {
+        fprintf(stderr, "Erreur Initialisation OpenAudio : %s\n", Mix_GetError());
         return -1;
-    }*/
+    }
     SDL_RaiseWindow(*window);
     SDL_SetWindowTitle(*window, "Minesweeper");
     return 0;
@@ -242,7 +249,7 @@ int countNearby(int row, int col, int size, int** grid, char** display) {
     display[row - 1][col - 1] = nearby;
 
     //si il n'y a aucune mine autour, d�couvrir les cases adjacentes
-    if (count == 0 && grid[row-1][col-1]!=1) {
+    if (count == 0 && grid[row - 1][col - 1] != 1) {
         int rRelativeToInput, cRelativeToInput;
         for (rRelativeToInput = -2; rRelativeToInput < 1; rRelativeToInput++) {
             for (cRelativeToInput = -2; cRelativeToInput < 1; cRelativeToInput++) {
@@ -310,7 +317,6 @@ void showgrid(int** adress, int size)
 bool showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SDL_Window* window, int** grid) {
     // display
     SDL_Event event;
-    int*** coordinates = NULL;
     int w = NULL, h = NULL;
     SDL_GetWindowSize(window, &w, &h);
     int tailleCase = min(w, h) / size;
@@ -325,28 +331,24 @@ bool showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
     /*printf(GRAYBG "Mines: " RED "%d" RESET, toPlace);
     printf(GRAYBG " -- Difficulte: " RED "%i" RESET, difficulty);
     printf(GRAYBG " -- Time: " RED "%d\n" RESET, timer);*/
-    for (int row = 0; row < size; row++) {
-        for (int col = 0; col < size; col++) {
-            SDL_Rect dst = { col * tailleCase,row * tailleCase,tailleCase,tailleCase };
-            SDL_Texture* image = NULL;
+    if (!checkWin(size, display)) {
+        for (int row = 0; row < size; row++) {
+            for (int col = 0; col < size; col++) {
+                SDL_Rect dst = { col * tailleCase,row * tailleCase,tailleCase,tailleCase };
+                SDL_Texture* image = NULL;
 
-            /*coordinates[row][col][0] = dst.x;
-            coordinates[row][col][1] = dst.y;
-            coordinates[row][col][2] = dst.w;
-            coordinates[row][col][3] = dst.h;*/
-
-            if (display[row][col] == 'F') {
-                image = loadImage("sprites/mines/flag.bmp", renderer);
-                SDL_RenderCopy(renderer, image, NULL, &dst);
-                //printf(REDBG "F" RESET " ");
-            }
-            else if (display[row][col] == '?' /* || display[row][col] == '0'*/) {
-                image = loadImage("sprites/mines/blank.bmp", renderer);
-                SDL_RenderCopy(renderer, image, NULL, &dst);
-                //printf("%c ", display[row][col]);
-            }
-            else {
-                switch (display[row][col])
+                if (display[row][col] == 'F') {
+                    image = loadImage("sprites/mines/flag.bmp", renderer);
+                    SDL_RenderCopy(renderer, image, NULL, &dst);
+                    //printf(REDBG "F" RESET " ");
+                }
+                else if (display[row][col] == '?' /* || display[row][col] == '0'*/) {
+                    image = loadImage("sprites/mines/blank.bmp", renderer);
+                    SDL_RenderCopy(renderer, image, NULL, &dst);
+                    //printf("%c ", display[row][col]);
+                }
+                else {
+                    switch (display[row][col])
                     {
                     case '0':
                         image = loadImage("sprites/mines/0.bmp", renderer);
@@ -399,8 +401,13 @@ bool showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
                         //printf("%c ", display[row][col]);
                         break;
                     }
+                }
             }
         }
+    } else { //win screen
+        SDL_Texture* image = NULL;
+        image = loadImage("sprites/ui/victory.bmp", renderer);
+        SDL_RenderCopy(renderer, image, NULL, NULL);
     }
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_MOUSEBUTTONDOWN && stop == false) {
@@ -411,7 +418,6 @@ bool showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
                 if (!(rowClick > size - 1 || colClick > size - 1)) {
                     //inside the grid
                     if (display[rowClick][colClick] != 'F') {
-                        countNearby(rowClick + 1, colClick + 1, size, grid, display);
                         if (grid[rowClick][colClick] == 1) {
                             for (int row = 0; row < size; row++) {
                                 for (int col = 0; col < size; col++) {
@@ -420,9 +426,14 @@ bool showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
                                     }
                                 }
                             }
+                            Mix_PlayChannel(-1, death, 0); //sound effect
                             display[rowClick][colClick] = 'x';
                             stop = true;
                             return(false);
+                        }
+                        else {
+                            Mix_PlayChannel(-1, dig, 0);
+                            countNearby(rowClick + 1, colClick + 1, size, grid, display);
                         }
                     }
                 }
@@ -431,10 +442,11 @@ bool showdisplay(char** display, int size, int timer, SDL_Renderer* renderer, SD
                 //flag
                 if (!(rowClick > size - 1 || colClick > size - 1)) {
                     if (display[rowClick][colClick] == 'F') {
-                        printf("F");
+                        Mix_PlayChannel(-1, removeFlag, 0); //sound effect
                         display[rowClick][colClick] = '?';
                     }
                     else {
+                        Mix_PlayChannel(-1, plantFlag, 0); //sound effect
                         display[rowClick][colClick] = 'F';
                     }
                 }
@@ -473,7 +485,21 @@ void reveal(char** display, int** grid, int size) { //cherche un endroit avec 0 
     countNearby(minRow, minCol, size, grid, display);
 }
 
+void loadSound() {
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, 1024) == -1) //Initialisation de l'API Mixer
+    {
+        printf("%s", Mix_GetError());
+    }
+
+    //sound effects
+    dig = Mix_LoadWAV("sound/dig.wav");
+    death = Mix_LoadWAV("sound/death.wav");
+    plantFlag = Mix_LoadWAV("sound/plantFlag.wav");
+    removeFlag = Mix_LoadWAV("sound/removeFlag.wav");
+}
+
 int main() {
+    loadSound();
     SDL_bool QUIT = SDL_FALSE;
     int size = 0;
     SDL_Event event;
@@ -482,7 +508,15 @@ int main() {
     int statut = EXIT_FAILURE;
     if (0 != initSDL(&window, &renderer, 720, 720)) /* ecrire cette fonction */
         goto Quit;
-    bool init = false;
+    SDL_Surface* icon = NULL;
+    icon = SDL_LoadBMP("sprites/mines/bigX.bmp");
+    if (icon == NULL) {
+        fprintf(stderr, "Erreur de chargement de l'icone : %s", SDL_GetError());
+    }
+    else
+    {
+        SDL_SetWindowIcon(window, icon);
+    }
     statut = EXIT_SUCCESS;
 
     while (!(size >= 3 && size <= 78)) {
@@ -589,7 +623,6 @@ int main() {
     time_t startTime, currentTime;
     startTime = time(NULL);
     int timer;
-    init = true;
 
     while (!stop)
     {
@@ -608,7 +641,7 @@ int main() {
             system("cls"); //clear console
             printf("\nBravo, vous avez gagne! \n");
             currentTime = time(NULL);
-            timer = difftime(currentTime, startTime); 
+            timer = difftime(currentTime, startTime);
 
             stop = true;
         }
@@ -633,10 +666,15 @@ int main() {
     free(display);
     free(grid);
 Quit:
+    Mix_FreeChunk(dig);
+    dig = NULL;
+    Mix_FreeChunk(death);
+    death = NULL;
     if (NULL != renderer)
         SDL_DestroyRenderer(renderer);
     if (NULL != window)
         SDL_DestroyWindow(window);
     SDL_Quit();
+    Mix_Quit();
     return statut;
 }
