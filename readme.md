@@ -5,4 +5,4 @@
 Left click to uncover a mine<br>
 Right click to place a flag
 <br>
-This is basically an upgrade of my <a href="https://github.com/coucoul38/minesweeper/blob/master/README.md">console minsweeper</a>
+*This is basically an upgrade of my <a href="https://github.com/coucoul38/minesweeper/blob/master/README.md">console minsweeper</a>*
